@@ -16,9 +16,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late String? _latitude;
-  late String? _longitude;
-  late bool? _isMockLocation;
+  String? _latitude;
+  String? _longitude;
+  bool? _isMockLocation;
 
   @override
   void initState() {
@@ -51,6 +51,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Trust Location Plugin'),
@@ -60,11 +61,20 @@ class _MyAppState extends State<MyApp> {
           child: Center(
               child: Column(
             children: <Widget>[
-              InkWell(
-                child: const Text('Ubicación:'),
-                onTap: () {
-                  requestLocationPermission();
-                },
+              Container(
+                color: const Color(0xFF000000),
+                width: 100,
+                height: 50,
+                child: InkWell(
+                    onTap: () {
+                      requestLocationPermission();
+                    },
+                    child: const Center(
+                      child: Text(
+                        'Ubicación',
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
+                    )),
               ),
               Text('Mock Location: $_isMockLocation'),
               Text('Latitude: $_latitude, Longitude: $_longitude'),
