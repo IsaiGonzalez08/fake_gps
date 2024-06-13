@@ -22,48 +22,45 @@ class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String? _latitude = "";
-  String? _longitude = "";
   bool? _isMockLocation = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  Completer<void> _locationUpdated = Completer<void>();
 
   Future<void> getLocation() async {
     try {
-      TrustLocation.onChange.listen((values) => setState(() {
-            _latitude = values.latitude;
-            _longitude = values.longitude;
-            _isMockLocation = values.isMockLocation;
-            print('Location is: $_isMockLocation');
-          }));
+      TrustLocation.onChange.listen((values) {
+        setState(() {
+          _isMockLocation = values.isMockLocation;
+          print('Location is: $_isMockLocation');
+        });
+        if (!_locationUpdated.isCompleted) {
+          _locationUpdated.complete();
+        }
+      });
     } on PlatformException catch (e) {
       print('PlatformException $e');
     }
   }
 
-  void requestLocationPermission() async {
+  Future<void> requestLocationPermission() async {
     final permission = await Permission.location.request();
     TrustLocation.start(5);
     if (permission.isGranted) {
-      getLocation();
+      await getLocation();
+      await _locationUpdated.future;
+      await _showMyDialog();
     } else {
       print('No hay permisos');
     }
-    _showMyDialog();
   }
 
   Future<void> _showMyDialog() async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // user must tap button!
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('User location'),
@@ -72,8 +69,8 @@ class _MyHomePageState extends State<MyHomePage> {
               children: <Widget>[
                 Text(
                   _isMockLocation!
-                      ? 'El usuario está usando una ubicación falsa \nMock Location: $_isMockLocation \nLatitude: $_latitude, Longitude: $_longitude'
-                      : 'El usuario no está usando una ubicación falsa\n Mock Location: $_isMockLocation \nLatitude: $_latitude, Longitude: $_longitude',
+                      ? 'El usuario está usando una ubicación falsa \nMock Location: $_isMockLocation'
+                      : 'El usuario no está usando una ubicación falsa\n Mock Location: $_isMockLocation',
                   style: const TextStyle(
                       color: Color(0xFF000000),
                       fontSize: 14,
@@ -87,12 +84,20 @@ class _MyHomePageState extends State<MyHomePage> {
               child: const Text('Salir'),
               onPressed: () {
                 Navigator.of(context).pop();
+                _resetState();
               },
             ),
           ],
         );
       },
     );
+  }
+
+  void _resetState() {
+    setState(() {
+      _isMockLocation = false;
+      _locationUpdated = Completer<void>();
+    });
   }
 
   @override
